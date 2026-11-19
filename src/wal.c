@@ -13,7 +13,8 @@
 void wal_init(wal_t *self, disk_t *disk)
 {
     self->disk = disk;
-
+    self->buffer = malloc((size_t)config.buffer_size * sizeof(log_record_t));
+    self->lsn = 0;
     /* TODO: Adicionar código aqui se necessário! */
 
     plog("[wal] Initialized\n");
@@ -22,14 +23,27 @@ void wal_init(wal_t *self, disk_t *disk)
 void wal_finalize(wal_t *self)
 {
     /* TODO: Adicionar código aqui se necessário! */
-
+    free(self->buffer);
     plog("[wal] Finalized\n");
 }
 
 long wal_append(wal_t *self, const char *from, const char *to, int amount)
 {
     /* TODO: Implementar! O código abaixo deve ser modificado! */
-    return 0;
+    self->lsn++;
+    // tem mais lsn do que tamanho no buffer, faz mod para colocar no buffer
+    int i = (int)self->lsn % config.buffer_size;
+
+    // salva o record
+    log_record_t record;
+    record.lsn = self->lsn;
+    // copia string de from para from de log_record_t
+    snprintf(record.from, sizeof(record.from), "%s", from);
+    snprintf(record.to, sizeof(record.to), "%s", to);
+    record.amount = amount;
+
+    self->buffer[i] = record;
+    return self->lsn;
 }
 
 void wal_wait_durable(wal_t *self, long lsn)

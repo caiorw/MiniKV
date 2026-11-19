@@ -15,6 +15,12 @@
     /**
      * @brief O banco de dados.
      */
+
+    typedef struct partition {
+        pthread_rwlock_t rwlock;
+    } partition_t;
+
+
     typedef struct db
     {
         table_t table; /* Tabela hash com as contas (sem sincronização). */
@@ -23,6 +29,13 @@
         /* TODO: Adicione aqui os atributos que achar necessários para implementar o
         comportamento do banco. Esses atributos deverão ser usados pelas funções
         do banco. */
+
+        // alocação dinamica de vetor de config.partitions partições com partition_t tamanho cada elemento
+       // confuso :((((
+       // LEMBRAR DE FAZER FREE NO FINAL PARA NAO DAR MEMORY LEAK
+       // ou simplesmente fazer um array de locks
+       partition_t *partitions;
+
     } db_t;
 
     /*============================================================================*

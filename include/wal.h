@@ -18,7 +18,8 @@
     typedef struct wal
     {
         disk_t *disk; /* Referência para o disco. */
-
+        log_record_t *buffer;
+        long *lsn;
         /* TODO: Adicione aqui os atributos que achar necessários para implementar o
         comportamento do log. Esses atributos deverão ser usados pelas funções
         do log. */

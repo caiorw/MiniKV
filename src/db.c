@@ -24,13 +24,21 @@ void db_init(db_t *self, wal_t *wal)
 
     /* TODO: Adicionar código aqui se necessário! */
 
+    self->partitions = malloc((size_t)config.partitions * sizeof(partition_t));
+    for (unsigned int i = 0; i < config.partitions; i++) {
+        pthread_rwlock_init(&self->partitions[i].rwlock, NULL);
+    }
+
     plog("[db] Initialized\n");
 }
 
 void db_finalize(db_t *self)
 {
     /* TODO: Adicionar código aqui se necessário! */
-
+    for (unsigned int i = 0; i < config.partitions; i++) {
+        pthread_rwlock_destroy(&self->partitions[i].rwlock);
+    }
+    free(self->partitions);
     table_finalize(&self->table);
     plog("[db] Finalized\n");
 }
@@ -38,21 +46,51 @@ void db_finalize(db_t *self)
 void db_acquire_read(db_t *self, const char *key)
 {
     /* TODO: Implementar! */
+    unsigned int p = db_partition_of(self, key);
+    pthread_rwlock_rdlock(&self->partitions[p].rwlock);
+
 }
 
 void db_release_read(db_t *self, const char *key)
 {
     /* TODO: Implementar! */
+    unsigned int p = db_partition_of(self, key);
+    pthread_rwlock_unlock(&self->partitions[p].rwlock);
 }
 
 void db_acquire_pair(db_t *self, const char *from, const char *to)
 {
     /* TODO: Implementar! */
+    unsigned int fromPartition = db_partition_of(self, from);
+    unsigned int toPartition = db_partition_of(self, to);
+
+    if (fromPartition == toPartition) {
+        pthread_rwlock_wrlock(&self->partitions[fromPartition].rwlock);
+    } else {
+        pthread_rwlock_t *primeiro = fromPartition < toPartition ? &self->partitions[fromPartition].rwlock : &self->partitions[toPartition].rwlock;
+        pthread_rwlock_t *segundo = fromPartition > toPartition ? &self->partitions[fromPartition].rwlock : &self->partitions[toPartition].rwlock;
+
+        pthread_rwlock_wrlock(primeiro);
+        pthread_rwlock_wrlock(segundo);
+    }
+    
 }
 
 void db_release_pair(db_t *self, const char *from, const char *to)
 {
     /* TODO: Implementar! */
+    unsigned int fromPartition = db_partition_of(self, from);
+    unsigned int toPartition = db_partition_of(self, to);
+
+    if (fromPartition == toPartition) {
+        pthread_rwlock_unlock(&self->partitions[fromPartition].rwlock);
+    } else {
+        pthread_rwlock_t *primeiro = fromPartition < toPartition ? &self->partitions[fromPartition].rwlock : &self->partitions[toPartition].rwlock;
+        pthread_rwlock_t *segundo = fromPartition > toPartition ? &self->partitions[fromPartition].rwlock : &self->partitions[toPartition].rwlock;
+
+        pthread_rwlock_unlock(segundo);
+        pthread_rwlock_unlock(primeiro);
+    }
 }
 
 void db_snapshot_begin(db_t *self)
