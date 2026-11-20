@@ -29,21 +29,21 @@ void wal_finalize(wal_t *self)
 
 long wal_append(wal_t *self, const char *from, const char *to, int amount)
 {
-    /* TODO: Implementar! O código abaixo deve ser modificado! */
+    
     self->lsn++;
     // tem mais lsn do que tamanho no buffer, faz mod para colocar no buffer
-    int i = (int)self->lsn % config.buffer_size;
+    int i = *self->lsn % (long)config.buffer_size;
 
     // salva o record
     log_record_t record;
-    record.lsn = self->lsn;
+    record.lsn = *self->lsn;
     // copia string de from para from de log_record_t
     snprintf(record.from, sizeof(record.from), "%s", from);
     snprintf(record.to, sizeof(record.to), "%s", to);
     record.amount = amount;
 
     self->buffer[i] = record;
-    return self->lsn;
+    return i;
 }
 
 void wal_wait_durable(wal_t *self, long lsn)

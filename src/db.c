@@ -8,8 +8,10 @@
  * VOCÊ DEVE ALTERAR ESTE ARQUIVO.
  */
 
+#include <semaphore.h>
 #include <stdlib.h>
 #include "db.h"
+#include "config.h"
 
 void db_init(db_t *self, wal_t *wal)
 {
@@ -28,6 +30,8 @@ void db_init(db_t *self, wal_t *wal)
     for (unsigned int i = 0; i < config.partitions; i++) {
         pthread_rwlock_init(&self->partitions[i].rwlock, NULL);
     }
+
+    sem_init(self->semaphore, 0, config.buffer_size);
 
     plog("[db] Initialized\n");
 }
