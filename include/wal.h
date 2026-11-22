@@ -15,12 +15,23 @@
     /**
      * @brief O log (write-ahead log) com group commit.
      */
+    typedef struct buffer {
+        log_record_t *records;
+        size_t num_rec;
+    } buffer_t;
+
     typedef struct wal
     {
         disk_t *disk; /* Referência para o disco. */
-        log_record_t *buffer;
-        long *lsn;
-        sem_t *semaphore;
+        buffer_t buffer;
+        buffer_t buffer_temp;
+        long lsn;
+
+        // um mutex que protege as operações de produtor e consumidor do buffer e outro que protege a escrita no disco
+        // desse modo, ainda podemos produzir registros no buffer enquanto escrevemos um lote no disco
+        pthread_mutex_t mutex_buffer, mutex_durable;
+        pthread_cond_t cond_nao_cheio, cond_escreveu, cond_nao_vazio;
+        int encerrando;
         /* TODO: Adicione aqui os atributos que achar necessários para implementar o
         comportamento do log. Esses atributos deverão ser usados pelas funções
         do log. */
@@ -79,5 +90,9 @@
      * ATENÇÃO: Insira aqui funções que você quiser adicionar à interface para    *
      * serem usadas em arquivos que incluem esse header.                          *
      *============================================================================*/
+
+     extern log_record_t make_record(long lsn, const char *from, const char *to, int amount);
+
+     extern void wal_close(wal_t *wal);
 
 #endif /*__WAL_H__*/

@@ -66,6 +66,7 @@ void server_shutdown(server_t *self)
 
     /* Encerra a thread de snapshot. */
     snapshot_stop(&self->snapshot);
+    wal_close(self->wal);
 
     /* Espera a thread de log e a thread de snapshot terminarem. */
     pthread_join(self->log_writer, NULL);
