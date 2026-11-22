@@ -31,8 +31,6 @@ void db_init(db_t *self, wal_t *wal)
         pthread_rwlock_init(&self->partitions[i].rwlock, NULL);
     }
 
-    sem_init(self->semaphore, 0, config.buffer_size);
-
     plog("[db] Initialized\n");
 }
 
@@ -100,11 +98,17 @@ void db_release_pair(db_t *self, const char *from, const char *to)
 void db_snapshot_begin(db_t *self)
 {
     /* TODO: Implementar! */
+    for (unsigned int i = 0; i < config.partitions; i++) {
+        pthread_rwlock_rdlock(&self->partitions[i].rwlock);
+    }
 }
 
 void db_snapshot_end(db_t *self)
 {
     /* TODO: Implementar! */
+    for (unsigned int i = 0; i < config.partitions; i++) {
+        pthread_rwlock_unlock(&self->partitions[i].rwlock);
+    }
 }
 
 /* --------------------------------------------------------- */
